@@ -1,0 +1,205 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+require "thor"
+require_relative "../lib/codeql_db"
+
+module CodeqlDb
+  # Command-line interface for CodeQL DB operations
+  class CommandLine < Thor
+    class_option :verbose, type: :boolean, default: false, desc: "Enable verbose output"
+    class_option :threads, type: :numeric, desc: "Number of threads to use"
+    class_option :ram, type: :numeric, desc: "RAM in MB to allocate"
+
+    desc "create [SOURCE_PATH] [DATABASE_PATH]", "Create a CodeQL database"
+    option :overwrite, type: :boolean, default: false, desc: "Overwrite existing database"
+    option :language, type: :string, default: "ruby", desc: "Programming language"
+    def create(source_path = ".", database_path = nil)
+      configure_from_options
+
+      puts "Creating CodeQL database..."
+      puts "Source path: #{File.expand_path(source_path)}"
+      puts "Database path: #{database_path || 'default'}"
+
+      begin
+        result = CodeqlDb.create_database(source_path, database_path, {
+          overwrite: options[:overwrite],
+          verbose: options[:verbose]
+        })
+
+        puts "\n✓ Database created successfully!"
+        puts "  Database path: #{result[:database_path]}"
+        puts "  Ruby files: #{result[:ruby_files_count]}"
+        puts "  Gemfiles: #{result[:gemfiles_count]}"
+        puts "  Created at: #{result[:creation_time]}"
+
+      rescue CodeqlDb::Error => e
+        puts "\n✗ Failed to create database: #{e.message}"
+        exit 1
+      end
+    end
+
+    desc "list [DATABASE_PATH]", "List files in a CodeQL database"
+    option :include_files, type: :boolean, default: false, desc: "Include file list"
+    option :include_stats, type: :boolean, default: false, desc: "Include statistics"
+    def list(database_path = "./codeql_db")
+      configure_from_options
+
+      puts "Listing files in CodeQL database..."
+      puts "Database path: #{File.expand_path(database_path)}"
+
+      begin
+        result = CodeqlDb.list_files(database_path, {
+          include_file_list: options[:include_files],
+          include_stats: options[:include_stats]
+        })
+
+        puts "\n📊 Database Information:"
+        puts "  Source path: #{result[:source_path]}"
+        puts "  Total files: #{result[:total_files]}"
+        puts "  Gemfiles: #{result[:gemfiles_count]}"
+        puts "  Created: #{result[:creation_time]}"
+
+        if options[:include_stats] && result[:statistics]
+          puts "\n📈 File Statistics:"
+          result[:statistics][:file_types].each do |ext, count|
+            puts "  #{ext}: #{count} files"
+          end
+        end
+
+        if options[:include_files] && result[:files]
+          puts "\n📁 Ruby Files (first 20):"
+          result[:files].first(20).each do |file|
+            puts "  #{file}"
+          end
+          puts "  ... and #{[result[:files].count - 20, 0].max} more" if result[:files].count > 20
+        end
+
+      rescue CodeqlDb::Error => e
+        puts "\n✗ Failed to list files: #{e.message}"
+        exit 1
+      end
+    end
+
+    desc "analyze [DATABASE_PATH]", "Analyze a CodeQL database"
+    def analyze(database_path = "./codeql_db")
+      configure_from_options
+
+      puts "Analyzing CodeQL database..."
+      puts "Database path: #{File.expand_path(database_path)}"
+
+      begin
+        result = CodeqlDb.analyze_database(database_path)
+
+        puts "\n📊 Analysis Results:"
+        puts "  Analysis time: #{result[:analysis_time]}"
+
+        basic_stats = result[:basic_stats]
+        puts "\n📈 Basic Statistics:"
+        puts "  Total files: #{basic_stats[:total_files]}"
+        puts "  Ruby files: #{basic_stats[:ruby_files]}"
+        puts "  Gemfiles: #{basic_stats[:gemfiles]}"
+        puts "  Database size: #{basic_stats[:database_size][:human_readable]}"
+
+        file_analysis = result[:file_analysis]
+        puts "\n📁 File Type Distribution:"
+        file_analysis[:file_types].each do |ext, count|
+          puts "  #{ext}: #{count} files"
+        end
+
+        puts "\n📂 Top Directories by File Count:"
+        file_analysis[:directory_distribution].first(10).each do |dir, count|
+          puts "  #{dir}: #{count} files"
+        end
+
+        summary = result[:summary]
+        puts "\n📋 Summary:"
+        puts "  Primary language: #{summary[:primary_language]}"
+        puts "  Most common extension: #{summary[:most_common_extension]}"
+
+      rescue CodeqlDb::Error => e
+        puts "\n✗ Failed to analyze database: #{e.message}"
+        exit 1
+      end
+    end
+
+    desc "info [DATABASE_PATH]", "Show database information"
+    def info(database_path = "./codeql_db")
+      configure_from_options
+
+      puts "Getting CodeQL database information..."
+      puts "Database path: #{File.expand_path(database_path)}"
+
+      begin
+        manager = CodeqlDb::Database::Manager.new(CodeqlDb.configuration)
+        result = manager.info(database_path)
+
+        puts "\n📊 Database Information:"
+        puts "  Path: #{result[:database_path]}"
+        puts "  Size: #{result[:size][:human_readable]} (#{result[:size][:bytes]} bytes)"
+
+        metadata = result[:metadata]
+        if metadata && !metadata.empty?
+          puts "\n📋 Metadata:"
+          puts "  Source path: #{metadata[:source_path]}"
+          puts "  Creation time: #{metadata[:creation_time]}"
+          puts "  Ruby files: #{metadata[:ruby_files]&.count || 0}"
+          puts "  Gemfiles: #{metadata[:gemfiles]&.count || 0}"
+        end
+
+      rescue CodeqlDb::Error => e
+        puts "\n✗ Failed to get database info: #{e.message}"
+        exit 1
+      end
+    end
+
+    desc "delete [DATABASE_PATH]", "Delete a CodeQL database"
+    option :force, type: :boolean, default: false, desc: "Skip confirmation"
+    def delete(database_path = "./codeql_db")
+      configure_from_options
+
+      puts "Deleting CodeQL database..."
+      puts "Database path: #{File.expand_path(database_path)}"
+
+      unless options[:force]
+        print "Are you sure you want to delete this database? (y/N): "
+        confirmation = STDIN.gets.chomp.downcase
+        unless confirmation == "y" || confirmation == "yes"
+          puts "Deletion cancelled."
+          exit 0
+        end
+      end
+
+      begin
+        manager = CodeqlDb::Database::Manager.new(CodeqlDb.configuration)
+        result = manager.delete(database_path)
+
+        puts "\n✓ Database deleted successfully!"
+        puts "  Path: #{result[:path]}"
+
+      rescue CodeqlDb::Error => e
+        puts "\n✗ Failed to delete database: #{e.message}"
+        exit 1
+      end
+    end
+
+    desc "version", "Show version information"
+    def version
+      puts "CodeQL DB version #{CodeqlDb::VERSION}"
+    end
+
+    private
+
+    def configure_from_options
+      CodeqlDb.configure do |config|
+        config.verbose = options[:verbose] if options[:verbose]
+        config.threads = options[:threads] if options[:threads]
+        config.ram = options[:ram] if options[:ram]
+      end
+    end
+  end
+end
+
+# Run the CLI
+CodeqlDb::CommandLine.start(ARGV)
+
