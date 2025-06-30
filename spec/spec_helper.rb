@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
 require "bundler/setup"
-require "codeql_db"
+require "ruby_codeql_db"
 require "tempfile"
 require "tmpdir"
 require "fileutils"
@@ -19,7 +19,7 @@ RSpec.configure do |config|
 
   # Create temporary directories for testing
   config.before(:each) do
-    @temp_dir = Dir.mktmpdir("codeql_db_test")
+    @temp_dir = Dir.mktmpdir("ruby_codeql_db_test")
     @original_dir = Dir.pwd
   end
 
@@ -79,7 +79,7 @@ RSpec.configure do |config|
           spec.email = ["test@example.com"]
           
           spec.summary = "Test gem"
-          spec.description = "A test gem for CodeQL DB testing"
+          spec.description = "A test gem for RubyCodeqlDb testing"
           spec.homepage = "https://example.com"
           spec.license = "MIT"
           
@@ -244,12 +244,12 @@ RSpec.configure do |config|
     end
 
     def mock_codeql_cli_available
-      allow_any_instance_of(CodeqlDb::Configuration).to receive(:cli_available?).and_return(true)
-      allow_any_instance_of(CodeqlDb::CLI::Wrapper).to receive(:version).and_return("2.15.0")
+      allow_any_instance_of(RubyCodeqlDb::Configuration).to receive(:cli_available?).and_return(true)
+      allow_any_instance_of(RubyCodeqlDb::CLI::Wrapper).to receive(:version).and_return("2.15.0")
     end
 
     def mock_codeql_cli_unavailable
-      allow_any_instance_of(CodeqlDb::Configuration).to receive(:cli_available?).and_return(false)
+      allow_any_instance_of(RubyCodeqlDb::Configuration).to receive(:cli_available?).and_return(false)
     end
   }
 end

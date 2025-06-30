@@ -2,27 +2,27 @@
 # frozen_string_literal: true
 
 require "thor"
-require_relative "../lib/codeql_db"
+require_relative "../lib/ruby_codeql_db"
 
-module CodeqlDb
-  # Command-line interface for CodeQL DB operations
+module RubyCodeqlDb
+  # Command-line interface for RubyCodeqlDb operations
   class CommandLine < Thor
     class_option :verbose, type: :boolean, default: false, desc: "Enable verbose output"
     class_option :threads, type: :numeric, desc: "Number of threads to use"
     class_option :ram, type: :numeric, desc: "RAM in MB to allocate"
 
-    desc "create [SOURCE_PATH] [DATABASE_PATH]", "Create a CodeQL database"
+    desc "create [SOURCE_PATH] [DATABASE_PATH]", "Create a RubyCodeqlDb database"
     option :overwrite, type: :boolean, default: false, desc: "Overwrite existing database"
     option :language, type: :string, default: "ruby", desc: "Programming language"
     def create(source_path = ".", database_path = nil)
       configure_from_options
 
-      puts "Creating CodeQL database..."
+      puts "Creating RubyCodeqlDb database..."
       puts "Source path: #{File.expand_path(source_path)}"
       puts "Database path: #{database_path || 'default'}"
 
       begin
-        result = CodeqlDb.create_database(source_path, database_path, {
+        result = RubyCodeqlDb.create_database(source_path, database_path, {
           overwrite: options[:overwrite],
           verbose: options[:verbose]
         })
@@ -33,23 +33,23 @@ module CodeqlDb
         puts "  Gemfiles: #{result[:gemfiles_count]}"
         puts "  Created at: #{result[:creation_time]}"
 
-      rescue CodeqlDb::Error => e
+      rescue RubyCodeqlDb::Error => e
         puts "\n✗ Failed to create database: #{e.message}"
         exit 1
       end
     end
 
-    desc "list [DATABASE_PATH]", "List files in a CodeQL database"
+    desc "list [DATABASE_PATH]", "List files in a RubyCodeqlDb database"
     option :include_files, type: :boolean, default: false, desc: "Include file list"
     option :include_stats, type: :boolean, default: false, desc: "Include statistics"
-    def list(database_path = "./codeql_db")
+    def list(database_path = "./ruby_codeql_db")
       configure_from_options
 
-      puts "Listing files in CodeQL database..."
+      puts "Listing files in RubyCodeqlDb database..."
       puts "Database path: #{File.expand_path(database_path)}"
 
       begin
-        result = CodeqlDb.list_files(database_path, {
+        result = RubyCodeqlDb.list_files(database_path, {
           include_file_list: options[:include_files],
           include_stats: options[:include_stats]
         })
@@ -75,21 +75,21 @@ module CodeqlDb
           puts "  ... and #{[result[:files].count - 20, 0].max} more" if result[:files].count > 20
         end
 
-      rescue CodeqlDb::Error => e
+      rescue RubyCodeqlDb::Error => e
         puts "\n✗ Failed to list files: #{e.message}"
         exit 1
       end
     end
 
-    desc "analyze [DATABASE_PATH]", "Analyze a CodeQL database"
-    def analyze(database_path = "./codeql_db")
+    desc "analyze [DATABASE_PATH]", "Analyze a RubyCodeqlDb database"
+    def analyze(database_path = "./ruby_codeql_db")
       configure_from_options
 
-      puts "Analyzing CodeQL database..."
+      puts "Analyzing RubyCodeqlDb database..."
       puts "Database path: #{File.expand_path(database_path)}"
 
       begin
-        result = CodeqlDb.analyze_database(database_path)
+        result = RubyCodeqlDb.analyze_database(database_path)
 
         puts "\n📊 Analysis Results:"
         puts "  Analysis time: #{result[:analysis_time]}"
@@ -117,21 +117,21 @@ module CodeqlDb
         puts "  Primary language: #{summary[:primary_language]}"
         puts "  Most common extension: #{summary[:most_common_extension]}"
 
-      rescue CodeqlDb::Error => e
+      rescue RubyCodeqlDb::Error => e
         puts "\n✗ Failed to analyze database: #{e.message}"
         exit 1
       end
     end
 
     desc "info [DATABASE_PATH]", "Show database information"
-    def info(database_path = "./codeql_db")
+    def info(database_path = "./ruby_codeql_db")
       configure_from_options
 
-      puts "Getting CodeQL database information..."
+      puts "Getting RubyCodeqlDb database information..."
       puts "Database path: #{File.expand_path(database_path)}"
 
       begin
-        manager = CodeqlDb::Database::Manager.new(CodeqlDb.configuration)
+        manager = RubyCodeqlDb::Database::Manager.new(RubyCodeqlDb.configuration)
         result = manager.info(database_path)
 
         puts "\n📊 Database Information:"
@@ -147,18 +147,18 @@ module CodeqlDb
           puts "  Gemfiles: #{metadata[:gemfiles]&.count || 0}"
         end
 
-      rescue CodeqlDb::Error => e
+      rescue RubyCodeqlDb::Error => e
         puts "\n✗ Failed to get database info: #{e.message}"
         exit 1
       end
     end
 
-    desc "delete [DATABASE_PATH]", "Delete a CodeQL database"
+    desc "delete [DATABASE_PATH]", "Delete a RubyCodeqlDb database"
     option :force, type: :boolean, default: false, desc: "Skip confirmation"
-    def delete(database_path = "./codeql_db")
+    def delete(database_path = "./ruby_codeql_db")
       configure_from_options
 
-      puts "Deleting CodeQL database..."
+      puts "Deleting RubyCodeqlDb database..."
       puts "Database path: #{File.expand_path(database_path)}"
 
       unless options[:force]
@@ -171,13 +171,13 @@ module CodeqlDb
       end
 
       begin
-        manager = CodeqlDb::Database::Manager.new(CodeqlDb.configuration)
+        manager = RubyCodeqlDb::Database::Manager.new(RubyCodeqlDb.configuration)
         result = manager.delete(database_path)
 
         puts "\n✓ Database deleted successfully!"
         puts "  Path: #{result[:path]}"
 
-      rescue CodeqlDb::Error => e
+      rescue RubyCodeqlDb::Error => e
         puts "\n✗ Failed to delete database: #{e.message}"
         exit 1
       end
@@ -185,13 +185,13 @@ module CodeqlDb
 
     desc "version", "Show version information"
     def version
-      puts "CodeQL DB version #{CodeqlDb::VERSION}"
+      puts "RubyCodeqlDb version #{RubyCodeqlDb::VERSION}"
     end
 
     private
 
     def configure_from_options
-      CodeqlDb.configure do |config|
+      RubyCodeqlDb.configure do |config|
         config.verbose = options[:verbose] if options[:verbose]
         config.threads = options[:threads] if options[:threads]
         config.ram = options[:ram] if options[:ram]
@@ -201,5 +201,5 @@ module CodeqlDb
 end
 
 # Run the CLI
-CodeqlDb::CommandLine.start(ARGV)
+RubyCodeqlDb::CommandLine.start(ARGV)
 

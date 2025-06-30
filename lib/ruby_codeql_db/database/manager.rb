@@ -3,7 +3,7 @@
 require "fileutils"
 require "find"
 
-module CodeqlDb
+module RubyCodeqlDb
   module Database
     # High-level database management operations
     class Manager
@@ -214,12 +214,12 @@ module CodeqlDb
           }
         }
 
-        metadata_path = File.join(database_path, "codeql_db_metadata.json")
+        metadata_path = File.join(database_path, "ruby_codeql_db_metadata.json")
         File.write(metadata_path, JSON.pretty_generate(metadata))
       end
 
       def load_database_metadata(database_path)
-        metadata_path = File.join(database_path, "codeql_db_metadata.json")
+        metadata_path = File.join(database_path, "ruby_codeql_db_metadata.json")
         
         if File.exist?(metadata_path)
           JSON.parse(File.read(metadata_path), symbolize_names: true)

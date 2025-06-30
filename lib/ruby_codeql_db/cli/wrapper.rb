@@ -3,7 +3,7 @@
 require "open3"
 require "json"
 
-module CodeqlDb
+module RubyCodeqlDb
   module CLI
     # Wrapper class for CodeQL CLI operations
     class Wrapper

@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module CodeqlDb
+module RubyCodeqlDb
   module Statistics
     # Analyzer for generating comprehensive statistics from CodeQL databases
     class Analyzer

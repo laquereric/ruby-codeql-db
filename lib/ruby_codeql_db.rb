@@ -1,12 +1,12 @@
 # frozen_string_literal: true
 
-require_relative "codeql_db/version"
-require_relative "codeql_db/configuration"
-require_relative "codeql_db/database/manager"
-require_relative "codeql_db/cli/wrapper"
-require_relative "codeql_db/statistics/analyzer"
+require_relative "ruby_codeql_db/version"
+require_relative "ruby_codeql_db/configuration"
+require_relative "ruby_codeql_db/database/manager"
+require_relative "ruby_codeql_db/cli/wrapper"
+require_relative "ruby_codeql_db/statistics/analyzer"
 
-module CodeqlDb
+module RubyCodeqlDb
   class Error < StandardError; end
   class DatabaseError < Error; end
   class CLIError < Error; end
@@ -38,8 +38,8 @@ end
 
 # Load rake tasks if in Rails environment
 if defined?(Rails)
-  require_relative "codeql_db/railtie"
+  require_relative "ruby_codeql_db/railtie"
 elsif defined?(Rake)
   # Load rake tasks for non-Rails environments only if Rake is already loaded
-  load File.expand_path("tasks/codeql_db.rake", __dir__)
+  load File.expand_path("tasks/ruby_codeql_db.rake", __dir__)
 end

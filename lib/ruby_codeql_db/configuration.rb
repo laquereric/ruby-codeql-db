@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-module CodeqlDb
+module RubyCodeqlDb
   # Configuration class for CodeQL database operations
   class Configuration
     attr_accessor :codeql_cli_path, :default_database_path, :source_root,
@@ -9,7 +9,7 @@ module CodeqlDb
 
     def initialize
       @codeql_cli_path = find_codeql_cli || "codeql"
-      @default_database_path = "./codeql_db"
+      @default_database_path = "./ruby_codeql_db"
       @source_root = "."
       @language = "ruby"
       @threads = 1

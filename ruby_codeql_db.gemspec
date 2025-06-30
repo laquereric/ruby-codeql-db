@@ -1,22 +1,22 @@
 # frozen_string_literal: true
 
-require_relative "lib/codeql_db/version"
+require_relative "lib/ruby_codeql_db/version"
 
 Gem::Specification.new do |spec|
-  spec.name = "codeql_db"
-  spec.version = CodeqlDb::VERSION
-  spec.authors = ["CodeQL DB Team"]
-  spec.email = ["codeql-db@example.com"]
+  spec.name = "ruby_codeql_db"
+  spec.version = RubyCodeqlDb::VERSION
+  spec.authors = ["RubyCodeqlDb Team"]
+  spec.email = ["ruby-codeql-db@example.com"]
 
   spec.summary = "A comprehensive Ruby gem for CodeQL database management and analysis"
-  spec.description = "CodeQL DB provides a complete solution for creating, managing, and analyzing CodeQL databases in Ruby applications and Rails projects. It includes rake tasks for database operations, file analysis, and code statistics generation."
-  spec.homepage = "https://github.com/example/codeql_db"
+  spec.description = "RubyCodeqlDb provides a complete solution for creating, managing, and analyzing CodeQL databases in Ruby applications and Rails projects. It includes rake tasks for database operations, file analysis, and code statistics generation."
+  spec.homepage = "https://github.com/example/ruby-codeql-db"
   spec.license = "MIT"
   spec.required_ruby_version = ">= 3.0.0"
 
   spec.metadata["homepage_uri"] = spec.homepage
-  spec.metadata["source_code_uri"] = "https://github.com/example/codeql_db"
-  spec.metadata["changelog_uri"] = "https://github.com/example/codeql_db/blob/main/CHANGELOG.md"
+  spec.metadata["source_code_uri"] = "https://github.com/example/ruby-codeql-db"
+  spec.metadata["changelog_uri"] = "https://github.com/example/ruby-codeql-db/blob/main/CHANGELOG.md"
 
   # Specify which files should be added to the gem when it is released.
   # The `git ls-files -z` loads the files in the RubyGem that have been added into git.

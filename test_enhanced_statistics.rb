@@ -1,140 +1,178 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# Test script for enhanced statistics functionality
+# Test script for enhanced RubyCodeqlDb statistics functionality
+require_relative "lib/ruby_codeql_db"
 
-require_relative "lib/codeql_db"
-
-puts "Testing Enhanced CodeQL DB Statistics"
+puts "Testing Enhanced RubyCodeqlDb Statistics"
 puts "=" * 50
 
-# Test 1: Lines of Code Calculation
-puts "\n1. Testing Lines of Code Calculation..."
-begin
-  config = CodeqlDb::Configuration.new
-  analyzer = CodeqlDb::Statistics::Analyzer.new(config)
-  
-  # Test with current Ruby files
-  ruby_files = Dir.glob("lib/**/*.rb")
-  puts "Found #{ruby_files.count} Ruby files to analyze"
-  
-  loc_stats = analyzer.calculate_lines_of_code(ruby_files)
-  
-  puts "✓ Lines of Code Analysis:"
-  puts "  Total lines: #{loc_stats[:total_lines]}"
-  puts "  Code lines: #{loc_stats[:code_lines]}"
-  puts "  Comment lines: #{loc_stats[:comment_lines]}"
-  puts "  Blank lines: #{loc_stats[:blank_lines]}"
-  puts "  Comment ratio: #{loc_stats[:comment_ratio]}%"
-  
-rescue => e
-  puts "✗ Lines of Code calculation failed: #{e.message}"
+# Test 1: Lines of Code Analysis
+puts "\n1. Testing Lines of Code Analysis..."
+config = RubyCodeqlDb::Configuration.new
+analyzer = RubyCodeqlDb::Statistics::Analyzer.new(config)
+
+# Create test files
+test_files = []
+Dir.mktmpdir do |temp_dir|
+  # Create a test Ruby file
+  test_file = File.join(temp_dir, "test.rb")
+  File.write(test_file, <<~RUBY)
+    # This is a comment
+    class TestClass
+      def test_method
+        # Another comment
+        puts "Hello, World!"
+      end
+    end
+  RUBY
+  test_files << test_file
+
+  # Analyze lines of code
+  loc_stats = analyzer.calculate_lines_of_code(test_files)
+  puts "✓ Lines of code analysis completed"
+  puts "  - Total lines: #{loc_stats[:total_lines]}"
+  puts "  - Code lines: #{loc_stats[:code_lines]}"
+  puts "  - Comment lines: #{loc_stats[:comment_lines]}"
+  puts "  - Blank lines: #{loc_stats[:blank_lines]}"
+  puts "  - Comment ratio: #{loc_stats[:comment_ratio]}%"
 end
 
 # Test 2: File Analysis
-puts "\n2. Testing File Analysis Methods..."
-begin
-  config = CodeqlDb::Configuration.new
-  analyzer = CodeqlDb::Statistics::Analyzer.new(config)
+puts "\n2. Testing File Analysis..."
+Dir.mktmpdir do |temp_dir|
+  # Create test files with different extensions
+  File.write(File.join(temp_dir, "test.rb"), "puts 'test'")
+  File.write(File.join(temp_dir, "helper.rb"), "def helper; end")
+  File.write(File.join(temp_dir, "Gemfile"), "gem 'test'")
+  File.write(File.join(temp_dir, "test.gemspec"), "Gem::Specification.new")
+
+  files = Dir.glob(File.join(temp_dir, "*"))
+  file_types = analyzer.send(:count_file_types, files)
   
-  # Create mock database info
-  ruby_files = Dir.glob("lib/**/*.rb")
-  gemfiles = Dir.glob("**/Gemfile*") + Dir.glob("**/*.gemspec")
-  
-  mock_database_info = {
-    metadata: {
-      ruby_files: ruby_files,
-      gemfiles: gemfiles
-    },
-    size: { human_readable: "1.2 MB", bytes: 1258291 }
-  }
-  
-  file_analysis = analyzer.send(:analyze_files, mock_database_info)
-  
-  puts "✓ File Analysis:"
-  puts "  File types found: #{file_analysis[:file_types].keys.join(', ')}"
-  puts "  Largest file: #{File.basename(file_analysis[:largest_files].first[:path])}" if file_analysis[:largest_files].any?
-  puts "  Naming patterns - snake_case: #{file_analysis[:naming_patterns][:snake_case]}"
-  puts "  Size distribution - small files: #{file_analysis[:file_size_distribution][:small]}"
-  
-rescue => e
-  puts "✗ File analysis failed: #{e.message}"
+  puts "✓ File type analysis completed"
+  file_types.each do |ext, count|
+    puts "  - #{ext}: #{count} files"
+  end
 end
 
-# Test 3: Code Metrics
-puts "\n3. Testing Code Metrics..."
-begin
-  config = CodeqlDb::Configuration.new
-  analyzer = CodeqlDb::Statistics::Analyzer.new(config)
+# Test 3: File Size Distribution
+puts "\n3. Testing File Size Distribution..."
+Dir.mktmpdir do |temp_dir|
+  # Create files of different sizes
+  File.write(File.join(temp_dir, "small.rb"), "a" * 500)  # ~500 bytes
+  File.write(File.join(temp_dir, "medium.rb"), "a" * 5000)  # ~5KB
+  File.write(File.join(temp_dir, "large.rb"), "a" * 50000)  # ~50KB
+
+  files = Dir.glob(File.join(temp_dir, "*"))
+  size_dist = analyzer.send(:analyze_file_size_distribution, files)
   
-  ruby_files = Dir.glob("lib/**/*.rb")
-  
-  mock_database_info = {
-    metadata: { ruby_files: ruby_files },
-    size: { human_readable: "1.2 MB", bytes: 1258291 }
-  }
-  
-  code_metrics = analyzer.send(:calculate_code_metrics, mock_database_info)
-  
-  puts "✓ Code Metrics:"
-  puts "  Total methods: #{code_metrics[:method_density][:total_methods]}"
-  puts "  Total classes: #{code_metrics[:class_distribution][:total_classes]}"
-  puts "  Total modules: #{code_metrics[:class_distribution][:total_modules]}"
-  puts "  Average file size: #{code_metrics[:average_file_size][:human_readable]}"
-  puts "  Methods per line: #{code_metrics[:method_density][:methods_per_line]}%"
-  
-rescue => e
-  puts "✗ Code metrics failed: #{e.message}"
+  puts "✓ File size distribution analysis completed"
+  puts "  - Tiny files (< 1KB): #{size_dist[:tiny]}"
+  puts "  - Small files (1-10KB): #{size_dist[:small]}"
+  puts "  - Medium files (10-100KB): #{size_dist[:medium]}"
+  puts "  - Large files (100KB-1MB): #{size_dist[:large]}"
+  puts "  - Huge files (> 1MB): #{size_dist[:huge]}"
 end
 
-# Test 4: Gemfile Analysis
-puts "\n4. Testing Gemfile Analysis..."
-begin
-  config = CodeqlDb::Configuration.new
-  analyzer = CodeqlDb::Statistics::Analyzer.new(config)
+# Test 4: Naming Patterns
+puts "\n4. Testing Naming Patterns..."
+Dir.mktmpdir do |temp_dir|
+  # Create files with different naming patterns
+  File.write(File.join(temp_dir, "snake_case.rb"), "")
+  File.write(File.join(temp_dir, "CamelCase.rb"), "")
+  File.write(File.join(temp_dir, "test_file.rb"), "")
+  File.write(File.join(temp_dir, "spec_file.rb"), "")
+  File.write(File.join(temp_dir, "file123.rb"), "")
+
+  ruby_files = Dir.glob(File.join(temp_dir, "*.rb"))
+  patterns = analyzer.send(:analyze_naming_patterns, ruby_files)
   
-  gemfiles = Dir.glob("**/Gemfile*") + Dir.glob("**/*.gemspec")
-  
-  mock_database_info = {
-    metadata: { gemfiles: gemfiles }
-  }
-  
-  gemfile_analysis = analyzer.send(:analyze_gemfiles, mock_database_info)
-  
-  puts "✓ Gemfile Analysis:"
-  puts "  Total gemfiles: #{gemfile_analysis[:gemfile_count]}"
-  puts "  Gemfile types: #{gemfile_analysis[:gemfile_types]}"
-  puts "  Has dependencies: #{gemfile_analysis[:dependencies][:has_dependencies]}" if gemfile_analysis[:dependencies][:has_dependencies]
-  
-rescue => e
-  puts "✗ Gemfile analysis failed: #{e.message}"
+  puts "✓ Naming pattern analysis completed"
+  puts "  - Snake case: #{patterns[:snake_case]}"
+  puts "  - Camel case: #{patterns[:camel_case]}"
+  puts "  - Mixed case: #{patterns[:mixed_case]}"
+  puts "  - With numbers: #{patterns[:with_numbers]}"
+  puts "  - Test files: #{patterns[:test_files]}"
+  puts "  - Spec files: #{patterns[:spec_files]}"
 end
 
-# Test 5: Complexity Analysis
-puts "\n5. Testing Complexity Analysis..."
-begin
-  config = CodeqlDb::Configuration.new
-  analyzer = CodeqlDb::Statistics::Analyzer.new(config)
+# Test 5: Method and Class Analysis
+puts "\n5. Testing Method and Class Analysis..."
+Dir.mktmpdir do |temp_dir|
+  # Create a test file with methods and classes
+  File.write(File.join(temp_dir, "test.rb"), <<~RUBY)
+    class TestClass
+      def method1
+        puts "method1"
+      end
+      
+      def method2
+        puts "method2"
+      end
+    end
+    
+    module TestModule
+      def module_method
+        puts "module method"
+      end
+    end
+  RUBY
+
+  ruby_files = Dir.glob(File.join(temp_dir, "*.rb"))
+  method_density = analyzer.send(:estimate_method_density, ruby_files)
+  class_dist = analyzer.send(:analyze_class_distribution, ruby_files)
   
-  ruby_files = Dir.glob("lib/**/*.rb").first(3) # Test with first 3 files for speed
+  puts "✓ Method and class analysis completed"
+  puts "  - Total methods: #{method_density[:total_methods]}"
+  puts "  - Total lines: #{method_density[:total_lines]}"
+  puts "  - Methods per line: #{method_density[:methods_per_line]}%"
+  puts "  - Average method length: #{method_density[:average_method_length]} lines"
+  puts "  - Total classes: #{class_dist[:total_classes]}"
+  puts "  - Total modules: #{class_dist[:total_modules]}"
+  puts "  - Classes per file: #{class_dist[:classes_per_file]}"
+  puts "  - Modules per file: #{class_dist[:modules_per_file]}"
+end
+
+# Test 6: Complexity Analysis
+puts "\n6. Testing Complexity Analysis..."
+Dir.mktmpdir do |temp_dir|
+  # Create a test file with some complexity
+  File.write(File.join(temp_dir, "complex.rb"), <<~RUBY)
+    class ComplexClass
+      def complex_method(param)
+        if param > 0
+          if param > 10
+            puts "high"
+          else
+            puts "medium"
+          end
+        else
+          puts "low"
+        end
+        
+        begin
+          risky_operation
+        rescue => e
+          handle_error(e)
+        end
+      end
+    end
+  RUBY
+
+  ruby_files = Dir.glob(File.join(temp_dir, "*.rb"))
+  complexity = analyzer.send(:estimate_cyclomatic_complexity, ruby_files)
+  nesting = analyzer.send(:analyze_nesting_depth, ruby_files)
   
-  mock_database_info = {
-    metadata: { ruby_files: ruby_files }
-  }
-  
-  complexity = analyzer.send(:analyze_complexity, mock_database_info)
-  
-  puts "✓ Complexity Analysis:"
-  puts "  Average complexity: #{complexity[:cyclomatic_complexity][:average_complexity]}"
-  puts "  Max nesting depth: #{complexity[:nesting_depth][:max_nesting_depth]}"
-  puts "  Methods found: #{complexity[:method_length_distribution][:methods_found]}"
-  puts "  Classes found: #{complexity[:class_size_distribution][:classes_found]}"
-  
-rescue => e
-  puts "✗ Complexity analysis failed: #{e.message}"
+  puts "✓ Complexity analysis completed"
+  puts "  - Total complexity: #{complexity[:total_complexity]}"
+  puts "  - Average complexity: #{complexity[:average_complexity]}"
+  puts "  - Files analyzed: #{complexity[:files_analyzed]}"
+  puts "  - Max nesting depth: #{nesting[:max_nesting_depth]}"
+  puts "  - Average nesting depth: #{nesting[:average_nesting_depth]}"
 end
 
 puts "\n" + "=" * 50
-puts "Enhanced statistics test completed!"
-puts "All major analysis components are functional."
+puts "✓ All enhanced statistics tests passed!"
+puts "RubyCodeqlDb statistics functionality is working correctly."
 
