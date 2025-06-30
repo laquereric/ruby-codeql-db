@@ -6,7 +6,7 @@ Gem::Specification.new do |spec|
   spec.name = "ruby_codeql_db"
   spec.version = RubyCodeqlDb::VERSION
   spec.authors = ["RubyCodeqlDb Team"]
-  spec.email = ["ruby-codeql-db@example.com"]
+  spec.email = ["laquereric@gmail.com"]
 
   spec.summary = "A comprehensive Ruby gem for CodeQL database management and analysis"
   spec.description = "RubyCodeqlDb provides a complete solution for creating, managing, and analyzing CodeQL databases in Ruby applications and Rails projects. It includes rake tasks for database operations, file analysis, and code statistics generation."
